@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Backlog Board</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Menu</h2>
+    <ul>
+      <li onclick="toggleView('card')">📋 Backlog Board</li>
+      <li onclick="toggleView('table')">📄 List View</li>
+    </ul>
+  </div>
+  <div class="main">
+    <div class="header">
+      <h1>My Product</h1>
+      <div class="profile">
+        <span>🔔</span>
+        <span>👤 Profile</span>
+      </div>
+    </div>
+    <div style="margin: 10px 20px;">
+      <button class="add-task-btn" onclick="openModal()">+ Add Task</button>
+    </div>
+    <div class="content">
+      <div class="board" id="board"></div>
+      <div id="tableView" style="display:none;">
+        <table>
+          <thead>
+            <tr><th>Title</th><th>Type</th><th>Priority</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal" id="taskModal">
+    <div class="modal-content">
+      <input type="text" id="taskTitle" placeholder="Task Title" required />
+      <select id="taskType">
+        <option value="Feature">Feature</option>
+        <option value="Bug">Bug</option>
+        <option value="TechDebt">TechDebt</option>
+      </select>
+      <select id="taskPriority">
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+      <select id="taskStatus">
+        <option value="To Do">To Do</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Code Review">Code Review</option>
+        <option value="Done">Done</option>
+      </select>
+      <button onclick="saveTask()">Save</button>
+      <button onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
