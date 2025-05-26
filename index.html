@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Backlog Board</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+      display: flex;
+    }
+    .sidebar {
+      width: 200px;
+      background-color: #1e293b;
+      color: white;
+      height: 100vh;
+      padding: 20px;
+    }
+    .sidebar h2 {
+      font-size: 1.5em;
+      margin-bottom: 20px;
+    }
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+    }
+    .sidebar ul li {
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      background: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .header h1 {
+      margin: 0;
+    }
+    .header .profile {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .content {
+      padding: 20px;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+    .column {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      height: auto;
+    }
+    .column h2 {
+      margin: 0 0 10px 0;
+      font-size: 1.2em;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+    }
+    .task {
+      border-left: 4px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #fafafa;
+      border-radius: 5px;
+    }
+    .task h3 {
+      margin: 0 0 5px;
+      font-size: 0.95em;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 0.75em;
+      border-radius: 4px;
+      background: #eee;
+      margin-right: 5px;
+    }
+    .priority-high {
+      background: #fca5a5;
+      color: #7f1d1d;
+    }
+    .priority-medium {
+      background: #fde68a;
+      color: #78350f;
+    }
+    .priority-low {
+      background: #bbf7d0;
+      color: #065f46;
+    }
+    .add-task-btn {
+      margin: 10px 20px;
+      padding: 10px 20px;
+      background: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 300px;
+    }
+    .modal-content input,
+    .modal-content select,
+    .modal-content button {
+      display: block;
+      margin-bottom: 10px;
+      width: 100%;
+      padding: 8px;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Menu</h2>
+    <ul>
+      <li>Backlog</li>
+    </ul>
+  </div>
+  <div class="main">
+    <div class="header">
+      <h1>My Product</h1>
+      <div class="profile">
+        <span>🔔</span>
+        <span>👤 Profile</span>
+      </div>
+    </div>
+    <button class="add-task-btn" onclick="openModal()">+ Add Task</button>
+    <button class="add-task-btn" onclick="toggleView()">🔁 Toggle View</button>
+    <div class="content">
+      <div class="board" id="board"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="taskModal">
+    <div class="modal-content">
+      <form action="save_task.php" method="POST">
+        <input type="text" name="title" placeholder="Task Title" required />
+        <select name="type">
+          <option value="Feature">Feature</option>
+          <option value="Bug">Bug</option>
+          <option value="TechDebt">TechDebt</option>
+        </select>
+        <select name="priority">
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+        <select name="status">
+          <option value="To Do">To Do</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Code Review">Code Review</option>
+          <option value="Done">Done</option>
+        </select>
+        <button type="submit">Add</button>
+        <button type="button" onclick="closeModal()">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let isCardView = true;
+  
+    let backlogData = {
+      "To Do": [
+        { title: "Setup project", type: "Feature", priority: "High" },
+        { title: "Fix login bug", type: "Bug", priority: "Medium" }
+      ],
+      "In Progress": [
+        { title: "Design dashboard UI", type: "Feature", priority: "Low" }
+      ],
+      "Code Review": [],
+      "Done": [
+        { title: "Create product logo", type: "TechDebt", priority: "Low" }
+      ]
+    };
+  
+    const priorityClass = {
+      High: "priority-high",
+      Medium: "priority-medium",
+      Low: "priority-low"
+    };
+  
+    const board = document.getElementById("board");
+  
+    function renderBoard() {
+      board.innerHTML = "";
+      if (isCardView) {
+        board.className = "board";
+        Object.entries(backlogData).forEach(([status, tasks]) => {
+          const column = document.createElement("div");
+          column.className = "column";
+  
+          const heading = document.createElement("h2");
+          heading.textContent = status;
+          column.appendChild(heading);
+  
+          tasks.forEach((task, index) => {
+            const taskDiv = document.createElement("div");
+            taskDiv.className = "task";
+  
+            const title = document.createElement("h3");
+            title.textContent = task.title;
+            taskDiv.appendChild(title);
+  
+            const typeBadge = document.createElement("span");
+            typeBadge.className = "badge";
+            typeBadge.textContent = task.type;
+            taskDiv.appendChild(typeBadge);
+  
+            const priorityBadge = document.createElement("span");
+            priorityBadge.className = `badge ${priorityClass[task.priority]}`;
+            priorityBadge.textContent = task.priority;
+            taskDiv.appendChild(priorityBadge);
+  
+            const statusSelector = document.createElement("select");
+            ["To Do", "In Progress", "Code Review", "Done"].forEach(opt => {
+              const option = document.createElement("option");
+              option.value = opt;
+              option.text = opt;
+              if (opt === status) option.selected = true;
+              statusSelector.appendChild(option);
+            });
+            statusSelector.onchange = (e) => {
+              const newStatus = e.target.value;
+              const movedTask = backlogData[status].splice(index, 1)[0];
+              backlogData[newStatus].push(movedTask);
+              renderBoard();
+            };
+            taskDiv.appendChild(statusSelector);
+  
+            const editBtn = document.createElement("button");
+            editBtn.textContent = "✏️";
+            editBtn.onclick = () => editTask(status, index);
+            taskDiv.appendChild(editBtn);
+  
+            const deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "🗑️";
+            deleteBtn.onclick = () => {
+              backlogData[status].splice(index, 1);
+              renderBoard();
+            };
+            taskDiv.appendChild(deleteBtn);
+  
+            column.appendChild(taskDiv);
+          });
+  
+          board.appendChild(column);
+        });
+      } else {
+        board.className = "";
+        const table = document.createElement("table");
+        table.style.width = "100%";
+        table.style.borderCollapse = "collapse";
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>Title</th><th>Type</th><th>Priority</th><th>Status</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        `;
+  
+        const tbody = table.querySelector("tbody");
+  
+        Object.entries(backlogData).forEach(([status, tasks]) => {
+          tasks.forEach((task, index) => {
+            const tr = document.createElement("tr");
+  
+            tr.innerHTML = `
+              <td>${task.title}</td>
+              <td>${task.type}</td>
+              <td>${task.priority}</td>
+              <td>
+                <select>
+                  <option${status === "To Do" ? " selected" : ""}>To Do</option>
+                  <option${status === "In Progress" ? " selected" : ""}>In Progress</option>
+                  <option${status === "Code Review" ? " selected" : ""}>Code Review</option>
+                  <option${status === "Done" ? " selected" : ""}>Done</option>
+                </select>
+              </td>
+              <td>
+                <button onclick="editTask('${status}', ${index})">✏️</button>
+                <button onclick="deleteTask('${status}', ${index})">🗑️</button>
+              </td>
+            `;
+  
+            const select = tr.querySelector("select");
+            select.onchange = (e) => {
+              const newStatus = e.target.value;
+              const movedTask = backlogData[status].splice(index, 1)[0];
+              backlogData[newStatus].push(movedTask);
+              renderBoard();
+            };
+  
+            tbody.appendChild(tr);
+          });
+        });
+  
+        board.appendChild(table);
+      }
+    }
+  
+    function editTask(status, index) {
+      const task = backlogData[status][index];
+      openModal(task, status, index);
+    }
+  
+    function deleteTask(status, index) {
+      backlogData[status].splice(index, 1);
+      renderBoard();
+    }
+  
+    function openModal(task = null, status = null, index = null) {
+      const modal = document.getElementById("taskModal");
+      const form = modal.querySelector("form");
+      form.title.value = task?.title || "";
+      form.type.value = task?.type || "Feature";
+      form.priority.value = task?.priority || "Medium";
+      form.status.value = task?.status || status || "To Do";
+  
+      form.onsubmit = (e) => {
+        e.preventDefault();
+        const newTask = {
+          title: form.title.value,
+          type: form.type.value,
+          priority: form.priority.value
+        };
+        const newStatus = form.status.value;
+  
+        if (task && status !== null) {
+          backlogData[status].splice(index, 1);
+        }
+  
+        backlogData[newStatus].push(newTask);
+        closeModal();
+        renderBoard();
+      };
+  
+      modal.style.display = "flex";
+    }
+  
+    function closeModal() {
+      document.getElementById("taskModal").style.display = "none";
+    }
+  
+    function toggleView() {
+      isCardView = !isCardView;
+      renderBoard();
+    }
+  
+    renderBoard();
+  </script>
+  
+</body>
+</html>
